@@ -332,7 +332,13 @@ func (h *developHandler) colorize(b []byte, as attributes, l int, g []string, vi
 
 			if h.opts.StringerFormatter {
 				if stringer, ok := av.(fmt.Stringer); ok {
-					v = []byte(stringer.String())
+					// Check if the resolved stringer is a nil pointer to prevent panic.
+					valOfStringer := reflect.ValueOf(stringer)
+					if valOfStringer.Kind() == reflect.Ptr && valOfStringer.IsNil() {
+						v = h.nilString()
+					} else {
+						v = []byte(stringer.String())
+					}
 					break
 				}
 			}
@@ -571,6 +577,11 @@ func (h *developHandler) elementType(t reflect.Type, v reflect.Value, l int, p i
 
 	if h.opts.StringerFormatter {
 		if stringer, ok := v.Interface().(fmt.Stringer); ok {
+			// Check if the resolved stringer (which could be a pointer) is nil.
+			valOfStringer := reflect.ValueOf(stringer)
+			if valOfStringer.Kind() == reflect.Ptr && valOfStringer.IsNil() {
+				return h.nilString()
+			}
 			return []byte(stringer.String())
 		}
 	}
